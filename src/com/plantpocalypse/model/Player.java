@@ -1,15 +1,19 @@
-package com.plantpocalypse;
+package com.plantpocalypse.model;
 
-import com.plantpocalypse.items.Food;
-import com.plantpocalypse.items.Item;
-import com.plantpocalypse.items.Key;
+import com.plantpocalypse.model.items.Food;
+import com.plantpocalypse.model.items.Item;
+import com.plantpocalypse.model.items.Key;
+import com.plantpocalypse.util.ConsoleDisplay;
 import com.plantpocalypse.util.Dialogue;
 
+import java.io.IOException;
+import java.util.*;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class Player {
+public class Player implements Serializable {
     private Room currentRoom;
     private List<Item> inventory;
 
@@ -17,6 +21,7 @@ public class Player {
     static final int MAX_HEALTH = 10;
     private int currentHealth = MAX_HEALTH;
     private boolean isAlive = true;
+    private boolean won = false;
 
     /* CONSTRUCTORS */
     public Player(Room startingLocation) {
@@ -47,9 +52,9 @@ public class Player {
             setCurrentHealth(health);
         }
         else {
+            setCurrentHealth(0);
             isAlive = false;
         }
-        System.out.println("Ouch!");
     }
 
     public void getPoisoned(){
@@ -65,11 +70,13 @@ public class Player {
         System.out.println(getCurrentHealth());
     }
 
-    public void displayInventory() {
-        System.out.println("Player Inventory: ");
-        for(int i=0; i <inventory.size(); i++){
-            System.out.println((i+1) + ". " + inventory.get(i).getName() + "\n");
+    public boolean displayInventory() {
+
+        if (inventory.size() > 0) {
+            return true;
         }
+
+        return false;
     }
 
     public boolean move(Room nextRoom) {
@@ -88,23 +95,16 @@ public class Player {
 
         if (selectedItem != null) {
             String selectedItemType = selectedItem.getClass().getSimpleName();
-
             switch (selectedItemType) {
-                case "Food":
-                    eat(itemName);
-                    break;
-
-                case "Key":
+                case "Food" -> eat(itemName);
+                case "Key" -> {
                     Key key = (Key) selectedItem;
                     unlockDoor(key);
-                    break;
-
-                case "Journal":
-                    System.out.println("You read the journal");
-                    break;
-
-                default:
-                    System.out.println("You cannot use that item, silly.");
+                }
+                case "Journal" -> System.out.println("You read the journal.");
+                case "FloorPlan" ->  open(itemName);
+                case "WeedKiller" ->  killMonsters(itemName);
+                case "Elixir" -> winGame();
             }
             return true;
         }
@@ -130,7 +130,6 @@ public class Player {
                 } else {
                     setCurrentHealth(getMaxHealth());
                 }
-                System.out.println("Omnomnom! Must have been organic");
             }
             else {
                 System.out.println("You ate the " + selectedItem.getName() + ", what's wrong with you?");
@@ -148,8 +147,24 @@ public class Player {
             if (validRoom && key.getRoomKeyUnlocks().isLocked()) {
                 key.getRoomKeyUnlocks().toggleLock();
                 removeItemFromInventory(key.getName());
-                System.out.println("\nYou unlocked the " + key.getRoomKeyUnlocks().getName());
             }
+        }
+    }
+
+    public void killMonsters(String itemName) {
+        Item item = retrieveItemFromInventory(itemName);
+        if ((item != null ) && (getCurrentRoom().getName().equals("Green House Floor 2"))){
+            HashMap<String, Room> mansion =  Game.GAME_INSTANCE.getMansion();
+            for (Room room : mansion.values()) {
+                room.setMonster(null);
+            }
+            removeItemFromInventory(item.getName());
+        }
+    }
+
+    public void winGame() {
+        if (getCurrentRoom().getName().equals("Hidden Office")) {
+            setWon(true);
         }
     }
 
@@ -157,14 +172,22 @@ public class Player {
         Item item = retrieveItemFromInventory(itemName);
 
         if (item != null) {
-            System.out.println(item.getDescription());
             return true;
         }
 
         return false;
     }
 
-    private Item retrieveItemFromInventory(String itemName) {
+    public boolean open(String itemName) {
+        Item item = retrieveItemFromInventory(itemName);
+        if (item != null) {
+            return true;
+        }
+        return false;
+    }
+
+
+    public Item retrieveItemFromInventory(String itemName) {
         Item result = null;
         Iterator<Item> iterator = inventory.iterator();
         while (iterator.hasNext()) {
@@ -225,11 +248,19 @@ public class Player {
         isAlive = alive;
     }
 
+    public boolean playerWon() {
+        return won;
+    }
+
+    public void setWon(boolean won) {
+        this.won = won;
+    }
+
     public List<Item> getInventory() {
         return inventory;
     }
 
-    public void setInventory() {
+    public void setInventory(List<Item> inventory) {
         this.inventory = inventory;
     }
 

@@ -1,11 +1,14 @@
-package com.plantpocalypse;
+package com.plantpocalypse.model;
 
-public class PlantMonster {
+import java.io.Serializable;
+
+public class PlantMonster implements Serializable {
     private String monsterName;
     private int baseAttack = 2;
     private String monsterDescription;
 
     /* CONSTRUCTORS */
+    public PlantMonster() {}
     public PlantMonster(String monsterName){
         setMonsterName(monsterName);
     }
@@ -19,7 +22,6 @@ public class PlantMonster {
    public void attackPlayer(Player player){
        if (player != null) {
            player.getHurt(getBaseAttack());
-           System.out.println("You were attacked by " + getMonsterName() + " and lost " + getBaseAttack() + " health points.");
        }
    }
 
